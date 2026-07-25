@@ -11,7 +11,8 @@ export async function POST(req) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { groupId, keyword, blogTopic } = await req.json();
+    const body = await req.json();
+    const { groupId, keyword, blogTopic } = body;
 
     if (!groupId) {
       return new NextResponse("Group ID is required", { status: 400 });
@@ -20,10 +21,14 @@ export async function POST(req) {
       return new NextResponse("Keyword and Blog Topic are required", { status: 400 });
     }
 
+    const headerApiKey = req.headers.get("x-custom-api-key");
+    const customApiKey = headerApiKey || body.customApiKey || session.user.customApiKey || null;
+
     const blogPost = await AIService.generateBlog(session.user.id, {
       groupId,
       keyword,
       blogTopic,
+      customApiKey,
     });
 
     return NextResponse.json(blogPost);

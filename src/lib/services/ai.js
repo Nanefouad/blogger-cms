@@ -3,13 +3,16 @@ import { UserService } from "./user";
 import config from "@/lib/config";
 
 export const AIService = {
-  async generateBlog(userId, { groupId, keyword, blogTopic }) {
-    const cost = config.ai.blogGenerationCost;
+  async generateBlog(userId, { groupId, keyword, blogTopic, customApiKey = null }) {
+    const isUsingCustomKey = Boolean(customApiKey && customApiKey.trim().length > 0);
+    const cost = isUsingCustomKey ? 0 : config.ai.blogGenerationCost;
     
-    // 1. Deduct credits first
-    await UserService.deductCredits(userId, cost);
+    // Deduct credits if not using custom API key
+    if (!isUsingCustomKey && cost > 0) {
+      await UserService.deductCredits(userId, cost);
+    }
 
-    const apiKey = config.ai.apiKey;
+    const apiKey = isUsingCustomKey ? customApiKey.trim() : config.ai.apiKey;
     if (!apiKey || apiKey.includes("your_") || apiKey.trim() === "") {
       console.warn("MUAPIAPP_API_KEY is not configured or invalid. Falling back to local Mock Blog Post Generation.");
       // Create mock blog post directly
@@ -31,7 +34,7 @@ export const AIService = {
       return blogPost;
     }
 
-    // 2. Formulate prompt instructing the model to output JSON
+    // Formulate prompt instructing the model to output JSON
     const systemPrompt = "You are a professional SEO copywriter and expert blogger. Generate a detailed, high-quality, and SEO-optimized blog post in clean HTML format. You must respond ONLY with a raw JSON object (do not include markdown code block styling or any additional text, just the raw JSON) with the following structure: \n{\n  \"title\": \"Blog Post Title\",\n  \"content\": \"<p>Full HTML content of the blog, using h2, h3, paragraphs, lists, bold text, etc...</p>\",\n  \"seoTitle\": \"SEO Optimized Title\",\n  \"seoDescription\": \"SEO Optimized Meta Description\",\n  \"seoKeywords\": \"keyword1, keyword2, keyword3\"\n}";
 
     const userPrompt = `Generate a blog post based on the following:
@@ -68,7 +71,7 @@ Ensure the article is informative, well-structured, and rich with semantic detai
         throw new Error("No request_id received from MuAPI");
       }
 
-      // 3. Create the BlogPost in 'processing' status
+      // Create the BlogPost in 'processing' status
       const blogPost = await prisma.blogPost.create({
         data: {
           title: "Generating blog content...",
@@ -107,7 +110,7 @@ Ensure the article is informative, well-structured, and rich with semantic detai
     }
   },
 
-  async checkStatus(requestId) {
+  async checkStatus(requestId, customApiKey = null) {
     const blogPost = await prisma.blogPost.findUnique({
       where: { requestId }
     });
@@ -153,7 +156,7 @@ Ensure the article is informative, well-structured, and rich with semantic detai
       return { status: "completed", blog: updated };
     }
 
-    const apiKey = config.ai.apiKey;
+    const apiKey = (customApiKey && customApiKey.trim().length > 0) ? customApiKey.trim() : config.ai.apiKey;
     if (!apiKey) throw new Error("MUAPIAPP_API_KEY is not configured");
 
     try {
@@ -225,7 +228,7 @@ Ensure the article is informative, well-structured, and rich with semantic detai
             seoTitle: parsed.seoTitle || parsed.title || "",
             seoDescription: parsed.seoDescription || "",
             seoKeywords: parsed.seoKeywords || "",
-            status: "draft", // Completed generation resides as draft until user publishes it
+            status: "draft",
             updateTime: new Date(),
           }
         });
@@ -241,8 +244,11 @@ Ensure the article is informative, well-structured, and rich with semantic detai
           }
         });
 
-        // Refund exact credits
-        await UserService.addCredits(blogPost.userId, blogPost.creditCost);
+        if (blogPost.creditCost > 0) {
+          try {
+            await UserService.addCredits(blogPost.userId, blogPost.creditCost);
+          } catch (e) {}
+        }
         return { status: "failed", error: result.error || "Prediction failed" };
       }
     } catch (e) {

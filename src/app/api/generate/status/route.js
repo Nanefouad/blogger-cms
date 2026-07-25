@@ -17,7 +17,10 @@ export async function GET(req) {
       return new NextResponse("Missing requestId", { status: 400 });
     }
 
-    const result = await AIService.checkStatus(requestId);
+    const headerApiKey = req.headers.get("x-custom-api-key");
+    const customApiKey = headerApiKey || session.user.customApiKey || null;
+
+    const result = await AIService.checkStatus(requestId, customApiKey);
     if (!result) {
       return new NextResponse("Not Found", { status: 404 });
     }
