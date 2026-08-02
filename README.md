@@ -13,6 +13,11 @@
 
 > 🎨 **[Explore 50+ more open-source AI apps →](https://github.com/Anil-matcha/awesome-generative-ai-apps)**
 
+## Related Projects
+
+- [MuAPI API quick start](https://muapi.ai/docs/quick-start?utm_source=github&utm_medium=readme&utm_campaign=blogger-cms) — connect an AI content workflow to the unified generation API
+- [MuAPI model catalog](https://muapi.ai/docs/models?utm_source=github&utm_medium=readme&utm_campaign=blogger-cms) — choose the text and media models available to your CMS
+
 ## 🌐 Project Repository
 
 **GitHub Repository:** [github.com/SamurAIGPT/blogger-cms](https://github.com/SamurAIGPT/blogger-cms)
