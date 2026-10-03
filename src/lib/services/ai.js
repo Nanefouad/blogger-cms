@@ -2,11 +2,47 @@ import { prisma } from "@/lib/prisma";
 import { UserService } from "./user";
 import config from "@/lib/config";
 
+function cleanJsonString(raw) {
+  let str = (raw || "").trim();
+  if (str.startsWith("```json")) {
+    str = str.substring(7);
+  } else if (str.startsWith("```")) {
+    str = str.substring(3);
+  }
+  if (str.endsWith("```")) {
+    str = str.substring(0, str.length - 3);
+  }
+  return str.trim();
+}
+
+function parseModelOutput(rawText, fallbackBlogTopic, fallbackKeyword) {
+  const jsonStr = cleanJsonString(rawText);
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return {
+      title: parsed.title || (fallbackBlogTopic ? `Blog: ${fallbackBlogTopic}` : "AI Generated Blog"),
+      content: parsed.content || `<p>${rawText.replace(/\n/g, "<br>")}</p>`,
+      seoTitle: parsed.seoTitle || parsed.title || "",
+      seoDescription: parsed.seoDescription || "",
+      seoKeywords: parsed.seoKeywords || fallbackKeyword || "",
+    };
+  } catch (e) {
+    console.warn("Failed to parse AI output as JSON, fallback to plain text:", e);
+    return {
+      title: fallbackBlogTopic ? `Blog: ${fallbackBlogTopic}` : "AI Generated Blog",
+      content: `<p>${rawText.replace(/\n/g, "<br>")}</p>`,
+      seoTitle: fallbackBlogTopic || "AI Blog",
+      seoDescription: "Generated blog post content.",
+      seoKeywords: fallbackKeyword || "blog, ai",
+    };
+  }
+}
+
 export const AIService = {
   async generateBlog(userId, { groupId, keyword, blogTopic, customApiKey = null }) {
     const isUsingCustomKey = Boolean(customApiKey && customApiKey.trim().length > 0);
     const cost = isUsingCustomKey ? 0 : config.ai.blogGenerationCost;
-    
+
     // Deduct credits if not using custom API key
     if (!isUsingCustomKey && cost > 0) {
       await UserService.deductCredits(userId, cost);
@@ -14,8 +50,7 @@ export const AIService = {
 
     const apiKey = isUsingCustomKey ? customApiKey.trim() : config.ai.apiKey;
     if (!apiKey || apiKey.includes("your_") || apiKey.trim() === "") {
-      console.warn("MUAPIAPP_API_KEY is not configured or invalid. Falling back to local Mock Blog Post Generation.");
-      // Create mock blog post directly
+      console.warn("AI API key is not configured. Falling back to local Mock Blog Post Generation.");
       const request_id = `mock_${Date.now()}`;
       const blogPost = await prisma.blogPost.create({
         data: {
@@ -34,7 +69,6 @@ export const AIService = {
       return blogPost;
     }
 
-    // Formulate prompt instructing the model to output JSON
     const systemPrompt = "You are a professional SEO copywriter and expert blogger. Generate a detailed, high-quality, and SEO-optimized blog post in clean HTML format. You must respond ONLY with a raw JSON object (do not include markdown code block styling or any additional text, just the raw JSON) with the following structure: \n{\n  \"title\": \"Blog Post Title\",\n  \"content\": \"<p>Full HTML content of the blog, using h2, h3, paragraphs, lists, bold text, etc...</p>\",\n  \"seoTitle\": \"SEO Optimized Title\",\n  \"seoDescription\": \"SEO Optimized Meta Description\",\n  \"seoKeywords\": \"keyword1, keyword2, keyword3\"\n}";
 
     const userPrompt = `Generate a blog post based on the following:
@@ -43,41 +77,52 @@ Blog Topic / Focus: ${blogTopic}
 
 Ensure the article is informative, well-structured, and rich with semantic details. Use the primary keyword naturally throughout the text.`;
 
+    const gatewayUrl = (config.ai.gatewayUrl || "https://api.openai.com/v1").replace(/\/+$/, "");
+    const model = config.ai.model || "omniroute/auto/best-coding";
+
     try {
-      const submitRes = await fetch("https://api.muapi.ai/api/v1/any-llm-models", {
+      // Direct OpenAI-compatible chat completion request
+      const endpoint = `${gatewayUrl}/chat/completions`;
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": apiKey,
+          "Authorization": `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          prompt: userPrompt,
-          system_prompt: systemPrompt,
-          model: "openai/gpt-5-chat",
-          reasoning: false,
-          priority: "throughput",
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
           temperature: 0.7,
-          max_tokens: null
         }),
       });
 
-      if (!submitRes.ok) {
-        const errorText = await submitRes.text();
-        throw new Error(`MuAPI submission failed: ${submitRes.status} ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gateway returned ${response.status}: ${errorText}`);
       }
 
-      const { request_id } = await submitRes.json();
-      if (!request_id) {
-        throw new Error("No request_id received from MuAPI");
+      const data = await response.json();
+      const content = data?.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new Error("No text content received in gateway response");
       }
 
-      // Create the BlogPost in 'processing' status
+      const parsed = parseModelOutput(content, blogTopic, keyword);
+
+      // Create directly with completed status
+      const request_id = `completed_${Date.now()}`;
       const blogPost = await prisma.blogPost.create({
         data: {
-          title: "Generating blog content...",
-          content: "<p>AI is currently writing your blog post. This usually takes 10-30 seconds. Please wait...</p>",
+          title: parsed.title,
+          content: parsed.content,
           author: "AI Writer",
-          status: "processing",
+          status: "completed",
+          seoTitle: parsed.seoTitle,
+          seoDescription: parsed.seoDescription,
+          seoKeywords: parsed.seoKeywords,
           keyword,
           blogTopic,
           requestId: request_id,
@@ -89,8 +134,9 @@ Ensure the article is informative, well-structured, and rich with semantic detai
 
       return blogPost;
     } catch (err) {
-      console.warn("AI generation API failed. Falling back to local Mock Blog Post Generation. Error:", err.message);
-      // Create mock blog post directly as fallback
+      console.warn("AI generation via gateway failed. Falling back to local Mock Blog Post Generation. Error:", err.message);
+
+      // If credit was deducted, refund on critical error or provide fallback
       const request_id = `mock_fallback_${Date.now()}`;
       const blogPost = await prisma.blogPost.create({
         data: {
@@ -125,10 +171,10 @@ Ensure the article is informative, well-structured, and rich with semantic detai
       return { status: "failed", error: "Generation failed" };
     }
 
-    // Check if it's a mock request (starts with 'mock_')
-    if (requestId && requestId.startsWith("mock_")) {
+    // Handle mock requests
+    if (requestId && (requestId.startsWith("mock_") || requestId.startsWith("mock_fallback_"))) {
       const elapsed = Date.now() - new Date(blogPost.createTime).getTime();
-      if (elapsed < 3000) {
+      if (elapsed < 2000) {
         return { status: "processing" };
       }
 
@@ -148,7 +194,7 @@ Ensure the article is informative, well-structured, and rich with semantic detai
           seoTitle: parsed.seoTitle,
           seoDescription: parsed.seoDescription,
           seoKeywords: parsed.seoKeywords,
-          status: "draft",
+          status: "completed",
           updateTime: new Date(),
         }
       });
@@ -156,105 +202,7 @@ Ensure the article is informative, well-structured, and rich with semantic detai
       return { status: "completed", blog: updated };
     }
 
-    const apiKey = (customApiKey && customApiKey.trim().length > 0) ? customApiKey.trim() : config.ai.apiKey;
-    if (!apiKey) throw new Error("MUAPIAPP_API_KEY is not configured");
-
-    try {
-      const res = await fetch(`https://api.muapi.ai/api/v1/predictions/${requestId}/result`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-        }
-      });
-
-      if (!res.ok) {
-        console.error("Polling endpoint returned error:", res.status);
-        return { status: "processing" };
-      }
-
-      const result = await res.json();
-      const state = result.status || result.state;
-
-      if (state === "completed" || state === "succeeded") {
-        const outputs = result.outputs || [];
-        const rawOutput = outputs[0] || result.output;
-        
-        let textResult = "";
-        if (typeof rawOutput === "string") {
-          textResult = rawOutput;
-        } else if (rawOutput && rawOutput.text) {
-          textResult = rawOutput.text;
-        } else if (result.result) {
-          textResult = typeof result.result === "string" ? result.result : JSON.stringify(result.result);
-        }
-
-        if (!textResult) {
-          throw new Error("Empty text output from model");
-        }
-
-        // Clean markdown wraps if the model did not follow instructions
-        let jsonStr = textResult.trim();
-        if (jsonStr.startsWith("```json")) {
-          jsonStr = jsonStr.substring(7);
-        }
-        if (jsonStr.startsWith("```")) {
-          jsonStr = jsonStr.substring(3);
-        }
-        if (jsonStr.endsWith("```")) {
-          jsonStr = jsonStr.substring(0, jsonStr.length - 3);
-        }
-        jsonStr = jsonStr.trim();
-
-        let parsed = {};
-        try {
-          parsed = JSON.parse(jsonStr);
-        } catch (e) {
-          console.warn("Failed to parse AI output as JSON, using as fallback text:", e);
-          parsed = {
-            title: blogPost.blogTopic ? `Blog: ${blogPost.blogTopic}` : "AI Generated Blog",
-            content: `<p>${textResult.replace(/\n/g, "<br>")}</p>`,
-            seoTitle: blogPost.blogTopic || "AI Blog",
-            seoDescription: "Generated blog post content.",
-            seoKeywords: blogPost.keyword || "blog, ai",
-          };
-        }
-
-        const updated = await prisma.blogPost.update({
-          where: { id: blogPost.id },
-          data: {
-            title: parsed.title || "AI Generated Blog",
-            content: parsed.content || "<p>No content generated</p>",
-            seoTitle: parsed.seoTitle || parsed.title || "",
-            seoDescription: parsed.seoDescription || "",
-            seoKeywords: parsed.seoKeywords || "",
-            status: "draft",
-            updateTime: new Date(),
-          }
-        });
-
-        return { status: "completed", blog: updated };
-      } else if (state === "failed") {
-        await prisma.blogPost.update({
-          where: { id: blogPost.id },
-          data: {
-            status: "failed",
-            title: "Generation failed",
-            content: `<p>Failed to generate content. Error: ${result.error || "Unknown prediction error"}</p>`
-          }
-        });
-
-        if (blogPost.creditCost > 0) {
-          try {
-            await UserService.addCredits(blogPost.userId, blogPost.creditCost);
-          } catch (e) {}
-        }
-        return { status: "failed", error: result.error || "Prediction failed" };
-      }
-    } catch (e) {
-      console.error("Polling error in checkStatus:", e);
-    }
-
+    // Default status if pending
     return { status: "processing" };
   }
 };

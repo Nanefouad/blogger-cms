@@ -36,7 +36,9 @@ const config = {
     }
   },
   ai: {
-    apiKey: process.env.MUAPIAPP_API_KEY,
+    gatewayUrl: process.env.AI_GATEWAY_URL || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
+    apiKey: process.env.AI_API_KEY || process.env.OPENAI_API_KEY || process.env.MUAPIAPP_API_KEY || "",
+    model: process.env.AI_MODEL || "omniroute/auto/best-coding",
     blogGenerationCost: 5, // 5 credits per blog generation
   },
   db: {

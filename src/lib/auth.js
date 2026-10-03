@@ -17,7 +17,7 @@ export const authOptions = {
       id: "credentials",
       name: "API Key",
       credentials: {
-        apiKey: { label: "MuAPI Key", type: "password" },
+        apiKey: { label: "API Key", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.apiKey) {
@@ -28,7 +28,7 @@ export const authOptions = {
           throw new Error("Invalid API key format");
         }
 
-        const dummyEmail = `apikey_${apiKey.slice(-8)}@muapi.local`;
+        const dummyEmail = `apikey_${apiKey.slice(-8)}@customkey.local`;
         let dbUser = await prisma.user.findFirst({
           where: {
             OR: [
