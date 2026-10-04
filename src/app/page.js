@@ -136,7 +136,7 @@ function BlogEditorContent() {
   // Trigger Save
   const handleSave = async () => {
     if (!session) {
-      signIn("google");
+      router.push("/login");
       return;
     }
 
@@ -197,7 +197,7 @@ function BlogEditorContent() {
   // Trigger AI Generation
   const handleGenerate = async () => {
     if (!session) {
-      signIn("google");
+      router.push("/login");
       return;
     }
 

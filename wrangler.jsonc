@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "blogger-cms",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2024-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+  /**
+   * Optionnel : Activer Cloudflare Hyperdrive pour accélérer les connexions PostgreSQL
+   * Pour créer votre Hyperdrive : npx wrangler hyperdrive create blogger-db --connection-string="postgresql://..."
+   *
+   * "hyperdrive": [
+   *   {
+   *     "binding": "HYPERDRIVE",
+   *     "id": "<VOTRE_HYPERDRIVE_ID>"
+   *   }
+   * ]
+   */
+}

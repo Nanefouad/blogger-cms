@@ -6,6 +6,10 @@ const config = {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     },
+    github: {
+      clientId: process.env.GITHUB_ID || process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_SECRET || process.env.GITHUB_CLIENT_SECRET,
+    },
     secret: process.env.NEXTAUTH_SECRET,
     url: process.env.NEXTAUTH_URL || "http://localhost:3000",
     webhook_url: process.env.WEBHOOK_URL || process.env.NEXTAUTH_URL || "http://localhost:3000",

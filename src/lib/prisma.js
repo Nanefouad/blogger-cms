@@ -4,7 +4,19 @@ import { Pool } from "pg";
 
 const globalForPrisma = globalThis;
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+function getConnectionString() {
+  if (typeof process !== "undefined") {
+    if (process.env?.HYPERDRIVE?.connectionString) {
+      return process.env.HYPERDRIVE.connectionString;
+    }
+    if (process.env?.DATABASE_URL) {
+      return process.env.DATABASE_URL;
+    }
+  }
+  return "";
+}
+
+const pool = new Pool({ connectionString: getConnectionString() });
 const adapter = new PrismaPg(pool);
 
 export const prisma =

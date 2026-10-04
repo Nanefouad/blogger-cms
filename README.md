@@ -2,7 +2,7 @@
 
 > **Write, generate, and SEO-optimize long-form blog posts inside a Notion-style WYSIWYG editor.** A production-ready, self-hostable Next.js SaaS boilerplate with folder categorization, AI-powered draft generation, meta-tag management, focus keyword tracking, and built-in Stripe billing. A free open-source alternative to Jasper, Copy.ai, Surfer SEO, Outranking, and Writesonic — powered by the MuAPI AI engine.
 
-**Tech stack:** Next.js 14 (App Router) · Prisma · PostgreSQL · NextAuth (Google OAuth) · Stripe · Tailwind CSS · Custom Rich Text Editor · OpenAI gpt-5-chat · MuAPI
+**Tech stack:** Next.js 14 (App Router) · Prisma · PostgreSQL · NextAuth (Google & GitHub OAuth) · Stripe · Tailwind CSS · Custom Rich Text Editor · OpenAI gpt-5-chat · MuAPI
 **Use cases:** Content marketing teams · Affiliate blog networks · SEO content production · Agency blog management · Multi-author publications · Programmatic SEO · Niche site building · Newsletter writing · Documentation drafting
 
 <p align="center">
@@ -32,7 +32,7 @@ Blogger CMS is a highly optimized SaaS application designed to help bloggers, co
 
 **Why use Blogger CMS?**
 
-- **Production-Ready SaaS** — Complete with Google OAuth, PostgreSQL connection pooling, and Stripe Checkout workflows.
+- **Production-Ready SaaS** — Complete with Google & GitHub OAuth, PostgreSQL connection pooling, and Stripe Checkout workflows.
 - **AI-Powered Generation** — Create comprehensive, formatted blog posts with headings, paragraphs, and lists instantly using the OpenAI gpt-5-chat engine.
 - **Robust Local Testing** — Automatically falls back to a realistic local mock generator if the AI API is offline or the credentials aren't configured, making testing 100% reliable.
 - **Custom Rich Text Editor** — Fast, native `contentEditable` editor with custom paragraph, heading, list, and font weight actions with automatic cursor focus preservation.
@@ -74,10 +74,12 @@ Configure these keys inside your local `.env` or production Vercel dashboard:
 | :-------------------- | :----------------------------------- | :------------------------------------------------------------------------------------------- |
 | **Database**          | `DATABASE_URL`                       | PostgreSQL connection string ([Supabase](https://supabase.com) or [Neon](https://neon.tech)) |
 |                       | `DIRECT_URL`                         | Direct DB connection for running Prisma migrations                                           |
-| **NextAuth / Google** | `NEXTAUTH_SECRET`                    | Random secret string for signing auth tokens (`openssl rand -base64 32`)                     |
+| **NextAuth / OAuth**  | `NEXTAUTH_SECRET`                    | Random secret string for signing auth tokens (`openssl rand -base64 32`)                     |
 |                       | `NEXTAUTH_URL`                       | Local/production domain (e.g. `http://localhost:3000`)                                       |
 |                       | `GOOGLE_CLIENT_ID`                   | Obtained from [Google Cloud Console Credentials](https://console.cloud.google.com/)          |
 |                       | `GOOGLE_CLIENT_SECRET`               | Obtained from [Google Cloud Console Credentials](https://console.cloud.google.com/)          |
+|                       | `GITHUB_CLIENT_ID`                   | Obtained from [GitHub Developer Settings](https://github.com/settings/developers)            |
+|                       | `GITHUB_CLIENT_SECRET`               | Obtained from [GitHub Developer Settings](https://github.com/settings/developers)            |
 | **Stripe Billing**    | `STRIPE_SECRET_KEY`                  | Obtained from [Stripe API Keys](https://dashboard.stripe.com/apikeys)                        |
 |                       | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Obtained from [Stripe API Keys](https://dashboard.stripe.com/apikeys)                        |
 |                       | `STRIPE_WEBHOOK_SECRET`              | Configured webhook secret to resolve transaction credits                                     |

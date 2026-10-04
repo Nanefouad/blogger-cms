@@ -162,10 +162,10 @@ function BlogListContent() {
           <h3 className="text-lg font-extrabold text-primary-text mb-2">Access Denied</h3>
           <p className="text-secondary-text text-sm mb-6">Please sign in to organize, edit, and publish blog articles.</p>
           <button
-            onClick={() => signIn("google")}
+            onClick={() => router.push("/login")}
             className="w-full py-3 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition-all cursor-pointer"
           >
-            Sign in with Google
+            Sign In to Continue
           </button>
         </div>
       </div>

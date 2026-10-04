@@ -7,7 +7,10 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "build:cf": "prisma generate && open-next-cloudflare build",
+    "preview:cf": "npm run build:cf && wrangler dev",
+    "deploy:cf": "npm run build:cf && wrangler deploy"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",
@@ -16,7 +19,7 @@
     "@stripe/stripe-js": "^9.2.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
-    "next": "16.2.3",
+    "next": "^16.3.8",
     "next-auth": "^4.24.13",
     "pg": "^8.20.0",
     "react": "19.2.4",
@@ -28,11 +31,13 @@
     "react-hot-toast": "^2.5.2"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/pg": "^8.20.0",
     "eslint": "^9",
-    "eslint-config-next": "16.2.3",
+    "eslint-config-next": "^16.3.8",
     "prisma": "^7.7.0",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "wrangler": "^4.147.0"
   }
 }
