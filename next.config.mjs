@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingIncludes: {
+    "/**": ["./node_modules/pg-cloudflare/**/*"],
+  },
+  serverExternalPackages: ["pg-cloudflare"],
   images: {
     remotePatterns: [
       {

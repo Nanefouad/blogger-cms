@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { IoClose, IoMenu } from "react-icons/io5";
 import { FiMoon, FiSun, FiLogOut, FiDollarSign, FiPlus, FiUser, FiKey, FiCheck, FiX, FiTrash2 } from "react-icons/fi";
-import { SiVercel } from "react-icons/si";
 import config from "@/lib/config";
 import toast from "react-hot-toast";
 
@@ -142,31 +141,6 @@ export default function Navbar() {
 
         {/* Desktop Actions Section */}
         <div className="hidden md:flex items-center gap-3">
-          
-          {/* Vercel Deploy Button */}
-          <a
-            href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSamurAIGPT%2Fcommon-saas-template"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-full border border-divider px-4 py-1.5 text-xs font-bold text-secondary-text hover:text-primary-text hover:bg-bg-card transition-colors shadow-sm"
-          >
-            <SiVercel className="text-xs text-white" />
-            <span>Deploy</span>
-          </a>
-
-          {/* Add/Manage API Key - Directly visible in Navbar */}
-          <button
-            onClick={() => setIsApiKeyModalOpen(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-              isApiKeyActive
-                ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
-                : "bg-bg-page/50 border-divider text-secondary-text hover:text-white hover:border-primary/40"
-            }`}
-          >
-            <FiKey className={isApiKeyActive ? "text-amber-400" : "text-secondary-text"} />
-            <span>{isApiKeyActive ? "Custom API Key" : "Add API Key"}</span>
-          </button>
-
           {status === "authenticated" ? (
             <div className="flex items-center">
               {/* Credit Balance indicator */}
@@ -274,31 +248,7 @@ export default function Navbar() {
               </Link>
             ))}
 
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                setIsApiKeyModalOpen(true);
-              }}
-              className="flex w-full items-center justify-between rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs font-bold text-amber-400"
-            >
-              <div className="flex items-center gap-2">
-                <FiKey />
-                <span>{isApiKeyActive ? "Manage Custom API Key" : "Add API Key"}</span>
-              </div>
-            </button>
-
             <div className="h-px bg-divider/50 my-2" />
-
-            {/* Vercel Deploy in Mobile menu */}
-            <a
-              href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSamurAIGPT%2Fcommon-saas-template"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-divider py-3 text-xs font-bold text-secondary-text hover:text-primary-text hover:bg-bg-card transition-all"
-            >
-              <SiVercel className="text-xs text-white" />
-              <span>Clone & Deploy Template</span>
-            </a>
 
             {status === "authenticated" ? (
               <button
