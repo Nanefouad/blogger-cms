@@ -15,7 +15,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [apiKeyInput, setApiKeyInput] = useState(session?.user?.customApiKey || "");
   const [savingKey, setSavingKey] = useState(false);
 
   const appName = config?.appName || "AI SaaS";
@@ -23,11 +23,7 @@ export default function Navbar() {
 
   const isApiKeyActive = Boolean(session?.user?.customApiKey);
 
-  useEffect(() => {
-    if (session?.user?.customApiKey) {
-      setApiKeyInput(session.user.customApiKey);
-    }
-  }, [session?.user?.customApiKey]);
+
 
   const appMatch = pathname ? pathname.match(/^\/app\/([^\/]+)/) : null;
   const currentAppId = appMatch ? appMatch[1] : null;

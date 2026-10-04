@@ -58,16 +58,56 @@ function BlogListContent() {
 
   // Load initial groups
   useEffect(() => {
+    let active = true;
+    const loadGroups = async () => {
+      setLoadingGroups(true);
+      try {
+        const res = await fetch("/api/groups");
+        if (res.ok) {
+          const data = await res.json();
+          if (active) {
+            setGroups(data);
+            if (data.length > 0 && !selectedGroupId) {
+              setSelectedGroupId(data[0].id);
+            }
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (active) setLoadingGroups(false);
+      }
+    };
+
     if (session) {
-      fetchGroups();
+      loadGroups();
     }
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   // Load blogs when group selection changes
   useEffect(() => {
+    let active = true;
+    const loadBlogs = async (groupId) => {
+      setLoadingBlogs(true);
+      try {
+        const res = await fetch(`/api/blogs?groupId=${groupId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (active) setBlogs(data);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (active) setLoadingBlogs(false);
+      }
+    };
+
     if (session && selectedGroupId) {
-      fetchBlogs(selectedGroupId);
+      loadBlogs(selectedGroupId);
     }
+    return () => { active = false; };
   }, [session, selectedGroupId]);
 
   // Create group

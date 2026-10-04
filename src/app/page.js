@@ -83,15 +83,26 @@ function BlogEditorContent() {
 
   // Load blog post details if in edit mode
   useEffect(() => {
-    if (session) {
-      fetchGroups();
+    let active = true;
+    const loadData = async () => {
+      try {
+        const resGroups = await fetch("/api/groups");
+        if (resGroups.ok && active) {
+          const dataGroups = await resGroups.json();
+          setGroups(dataGroups);
+          if (dataGroups.length > 0 && !selectedGroupId) {
+            setSelectedGroupId(dataGroups[0].id);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load groups", e);
+      }
+
       if (blogId) {
-        fetch(`/api/blogs?id=${blogId}`)
-          .then((res) => {
-            if (res.ok) return res.json();
-            throw new Error("Failed to load blog post");
-          })
-          .then((data) => {
+        try {
+          const res = await fetch(`/api/blogs?id=${blogId}`);
+          if (res.ok && active) {
+            const data = await res.json();
             setTitle(data.title || "");
             setContent(data.content || "");
             setAuthor(data.author || "");
@@ -104,13 +115,20 @@ function BlogEditorContent() {
             setKeyword(data.keyword || "");
             setBlogTopic(data.blogTopic || "");
             setSelectedGroupId(data.groupId || "");
-          })
-          .catch((err) => {
-            setErrorMessage(err.message);
-          });
+          } else if (active) {
+            setErrorMessage("Failed to load blog post");
+          }
+        } catch (err) {
+          if (active) setErrorMessage(err.message);
+        }
       }
+    };
+
+    if (session) {
+      loadData();
     }
-  }, [session, blogId]);
+    return () => { active = false; };
+  }, [session, blogId, selectedGroupId]);
 
   // Create quick blog group from editor
   const handleCreateGroup = async () => {
